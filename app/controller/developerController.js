@@ -1,33 +1,33 @@
 const Developers = require("../models/Developers");
 
 const getAllDevelopers = async (req, res) => {
-
     let queryString = JSON.stringify(req.query);
 
     queryString = queryString.replace(
-        /\b(gt|gte|lt|lte)\b/g
-        ,match => `$${match}`);
-        let query = Developers.find(JSON.parse(queryString));
+        /\b(gt|gte|lt|lte)\b/g,
+        match => `$${match}`
+    );
+    let query = Developers.find(JSON.parse(queryString));
 
-        if(req.query.select){
-            const fields = req.query.select.split(',').join(" ");
-            query = Developers.find({}).select(fields);
-        }
+    if (req.query.select) {
+        const fields = req.query.select.split(',').join(" ");
+        query = query.select(fields);
+    }
 
-        if(req.query.sort){
-            const sortBy = req.query.sort.split(',').join(" ");
-            query = Developers.find({}).sort(sortBy);
-        }
+    if (req.query.sort) {
+        const sortBy = req.query.sort.split(',').join(" ");
+        query = query.sort(sortBy);
+    }
 
-        query = Developers.find({});
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 2;
-        const skip = (page - 1) * limit;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 2;
+    const skip = (page - 1) * limit;
 
-        query.skip(skip).limit(limit);
+    // Remove this line to fix pagination
+    // query.skip(skip).limit(limit);
 
     try {
-        const developers = await query;
+        const developers = await query.skip(skip).limit(limit); // Move pagination here
         res.status(200).json({
             data: developers,
             success: true,
