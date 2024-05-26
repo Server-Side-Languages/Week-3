@@ -38,11 +38,12 @@ const genreSchema = new mongoose.Schema(
                 "M for Mature"
             ]
         },
-        developer:
+        developer:[
             {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Developer",
         },
+    ],
     },
     { timestamps: true}
 );

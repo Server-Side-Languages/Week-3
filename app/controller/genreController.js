@@ -2,8 +2,42 @@ const Developers = require("../models/Developers");
 const Genre = require("../models/Genre");
 
 const getAllGenres = async (req, res) => {
+
+    let queryString = JSON.stringify(req.query);
+
+    queryString = queryString.replace(
+        /\b(gt|gte|lt|lte)\b/g
+        ,match => `$${match}`);
+        let query = Genre.find(JSON.parse(queryString));
+
+        if(req.query.select){
+            const fields = req.query.select.split(',').join(" ");
+            query = Genre.find({}).select(fields);
+        }
+
+        if(req.query.sort){
+            const sortBy = req.query.sort.split(',').join(" ");
+            query = Genre.find({}).sort(sortBy);
+        }
+        if (req.query.releaseAfter && req.query.rating) {
+            query = {
+                $and: [
+                    { release: { $gt: req.query.releaseAfter } },
+                    { rating: req.query.rating }
+                ]
+            };
+        }
+
+        query = Genre.find({});
+        query = Developers.find({});
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 2;
+        const skip = (page - 1) * limit;
+
+        query.skip(skip).limit(limit);
+
     try {
-        const genres = await Genre.find({}).populate('developer', 'name');
+        const genres = await Genre.find(query);
         res.status(200).json({
             data: genres,
             success: true,
