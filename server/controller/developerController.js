@@ -1,33 +1,45 @@
 const Developers = require("../models/Developers");
 
 const getAllDevelopers = async (req, res) => {
-    let queryString = JSON.stringify(req.query);
-
-    queryString = queryString.replace(
-        /\b(gt|gte|lt|lte)\b/g,
-        match => `$${match}`
-    );
-    let query = Developers.find(JSON.parse(queryString));
-
-    if (req.query.select) {
-        const fields = req.query.select.split(',').join(" ");
-        query = query.select(fields);
-    }
-
-    if (req.query.sort) {
-        const sortBy = req.query.sort.split(',').join(" ");
-        query = query.sort(sortBy);
-    }
-
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 2;
-    const skip = (page - 1) * limit;
-
-    // Remove this line to fix pagination
-    // query.skip(skip).limit(limit);
-
     try {
-        const developers = await query.skip(skip).limit(limit); // Move pagination here
+
+        let query = {};
+
+        if (req.query.search) {
+            query.name = { $regex: req.query.search, $options: 'i' };
+        }
+
+        let filteredQuery = { ...req.query };
+        delete filteredQuery.search;
+
+        let queryString = JSON.stringify(filteredQuery);
+        queryString = queryString.replace(/\b(gt|gte|lt|lte)\b/g, match => `$${match}`);
+        query = { ...query, ...JSON.parse(queryString) };
+
+        console.log("Query:", query); 
+
+        let mongooseQuery = Developers.find(query);
+
+        if (req.query.select) {
+            const fields = req.query.select.split(',').join(" ");
+            mongooseQuery = mongooseQuery.select(fields);
+        }
+
+        if (req.query.sort) {
+            const sortBy = req.query.sort.split(',').join(" ");
+            mongooseQuery = mongooseQuery.sort(sortBy);
+        }
+
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 2;
+        const skip = (page - 1) * limit;
+        mongooseQuery = mongooseQuery.skip(skip).limit(limit);
+
+        console.log("Mongoose Query:", mongooseQuery); 
+
+        const developers = await mongooseQuery;
+        console.log("Developers:", developers);
+
         res.status(200).json({
             data: developers,
             success: true,
@@ -41,6 +53,8 @@ const getAllDevelopers = async (req, res) => {
         });
     }
 };
+
+
 
 const getDeveloperById = async (req, res) => {
     const { id } = req.params;
